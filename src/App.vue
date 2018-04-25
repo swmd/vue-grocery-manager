@@ -2,7 +2,7 @@
 
   <b-container fluid>
     <!-- Title Area -->
-    <b-row>
+    <b-row class="justify-content-md-center mb-4 mt-4">
       <h1>{{ subtitle }}</h1>
     </b-row>
 
@@ -44,6 +44,8 @@
     <!-- Main table element -->
     <b-table show-empty
              stacked="md"
+             :striped=true
+             :outlined=true
              :items="items"
              :fields="fields"
              :current-page="currentPage"
@@ -53,58 +55,54 @@
              :sort-desc.sync="sortDesc"
              @filtered="onFiltered"
     >
-      <template slot="name" slot-scope="row">{{row.value.first}} {{row.value.last}}</template>
-      <template slot="isActive" slot-scope="row">{{row.value?'Yes :)':'No :('}}</template>
+      <!-- <template slot="name" slot-scope="row">{{row.value.first}} {{row.value.last}}</template>
+      <template slot="isActive" slot-scope="row">{{row.value?'Yes :)':'No :('}}</template> -->
       <template slot="actions" slot-scope="row">
         <!-- We use @click.stop here to prevent a 'row-clicked' event from also happening -->
-        <b-button size="sm" @click.stop="info(row.item, row.index, $event.target)" class="mr-1">
-          Info modal
+        <b-button size="sm" @click.stop="usedUp(row.item, row.index, $event.target)" class="mr-1">
+          Used Up
         </b-button>
-        <b-button size="sm" @click.stop="row.toggleDetails">
-          {{ row.detailsShowing ? 'Hide' : 'Show' }} Details
-        </b-button>
-      </template>
-      <template slot="row-details" slot-scope="row">
-        <b-card>
-          <ul>
-            <li v-for="(value, key) in row.item" :key="key">{{ key }}: {{ value}}</li>
-          </ul>
-        </b-card>
       </template>
     </b-table>
 
-    <!-- Info modal -->
-    <b-modal id="modalInfo" @hide="resetModal" :title="modalInfo.title" ok-only>
-      <pre>{{ modalInfo.content }}</pre>
-    </b-modal>
+    <b-row class="mb-4 mt-4">
+      <h3>Add Grocery</h3>
+    </b-row>
 
+    <b-form @submit="onSubmit">
+      <b-form-group id="groceryNameInputGroup"
+                    label="Grocery Name:"
+                    label-for="groceryName">
+        <b-form-input id="groceryName"
+                      type="text"
+                      v-model="form.name"
+                      required
+                      placeholder="Grocery name">
+        </b-form-input>
+      </b-form-group>
+      <b-form-group id="fridgeGroup"
+                    label="Fridge:"
+                    label-for="fridge">
+        <b-form-select id="fridge"
+                      :options="fridges"
+                      required
+                      v-model="form.fridge">
+        </b-form-select>
+      </b-form-group>
+      <b-button type="submit" variant="primary">Add</b-button>
+    </b-form>
   </b-container>
 </template>
 
 <script>
 const items = [
-  { isActive: true, age: 40, name: { first: 'Dickerson', last: 'Macdonald' } },
-  { isActive: false, age: 21, name: { first: 'Larsen', last: 'Shaw' } },
-  {
-    isActive: false,
-    age: 9,
-    name: { first: 'Mini', last: 'Navarro' },
-    _rowVariant: 'success'
-  },
-  { isActive: false, age: 89, name: { first: 'Geneva', last: 'Wilson' } },
-  { isActive: true, age: 38, name: { first: 'Jami', last: 'Carney' } },
-  { isActive: false, age: 27, name: { first: 'Essie', last: 'Dunlap' } },
-  { isActive: true, age: 40, name: { first: 'Thor', last: 'Macdonald' } },
-  {
-    isActive: true,
-    age: 87,
-    name: { first: 'Larsen', last: 'Shaw' },
-    _cellVariants: { age: 'danger', isActive: 'warning' }
-  },
-  { isActive: false, age: 26, name: { first: 'Mitzi', last: 'Navarro' } },
-  { isActive: false, age: 22, name: { first: 'Genevieve', last: 'Wilson' } },
-  { isActive: true, age: 38, name: { first: 'John', last: 'Carney' } },
-  { isActive: false, age: 29, name: { first: 'Dick', last: 'Dunlap' } }
+  { name: 'bread', amount: 2, location: 'Fridge 1'},
+  { name: 'butter', amount: 1, location: 'Fridge 1'},
+  { name: 'cheese', amount: 3, location: 'Fridge 2'},
+  { name: 'jam', amount: 2, location: 'Fridge 2'},
+  { name: 'a', amount: 3, location: 'Fridge 1'},
+  { name: 'b', amount: 1, location: 'Fridge 1'},
+  { name: 'c', amount: 2, location: 'Fridge 2'},
 ]
 
 export default {
@@ -113,9 +111,9 @@ export default {
       subtitle: 'Your Grocery Manager',
       items: items,
       fields: [
-        { key: 'name', label: 'Person Full name', sortable: true },
-        { key: 'age', label: 'Person age', sortable: true, 'class': 'text-center' },
-        { key: 'isActive', label: 'is Active' },
+        { key: 'name', label: 'Name', sortable: true },
+        { key: 'amount', label: 'Amount', sortable: true, 'class': 'text-center' },
+        { key: 'location', label: 'Location' },
         { key: 'actions', label: 'Actions' }
       ],
       currentPage: 1,
@@ -125,7 +123,14 @@ export default {
       sortBy: null,
       sortDesc: false,
       filter: null,
-      modalInfo: { title: '', content: '' }
+      form: {
+        name: '',
+        fridge: ''
+      },
+      fridges: [
+        {text: 'Fridge 1', value: 'Fridge 1'},
+        {text: 'Fridge 2', value: 'Fridge 2'}
+      ]
     }
   },
   computed: {
@@ -137,20 +142,37 @@ export default {
     }
   },
   methods: {
-    info (item, index, button) {
-      this.modalInfo.title = `Row index: ${index}`
-      this.modalInfo.content = JSON.stringify(item, null, 2)
-      this.$root.$emit('bv::show::modal', 'modalInfo', button)
-    },
-    resetModal () {
-      this.modalInfo.title = ''
-      this.modalInfo.content = ''
+    usedUp (item, index, button) {
+      if (item.amount > 1) {
+        this.items[index].amount = item.amount - 1;
+      } else {
+        this.items.splice(index, 1);
+      }
     },
     onFiltered (filteredItems) {
       // Trigger pagination to update the number of buttons/pages due to filtering
       this.totalRows = filteredItems.length
       this.currentPage = 1
-    }
+    },
+    onSubmit (evt) {
+      evt.preventDefault();
+      if (!this.form.name || !this.form.fridge) return;
+      let index = -1;
+      this.items.forEach((item, i) => {
+        if (item.name === this.form.name) {
+          index = i;
+        }
+      });
+      if (index >= 0) {
+        this.items[index].amount += 1;
+      } else {
+        this.items.push({
+          name: this.form.name,
+          amount: 1,
+          location: this.form.fridge
+        });
+      }
+    },
   }
 }
 </script>
