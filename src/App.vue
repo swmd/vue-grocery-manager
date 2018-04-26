@@ -69,7 +69,7 @@
       <h3>Add Grocery</h3>
     </b-row>
 
-    <b-form @submit="onSubmit">
+    <b-form @submit="onSubmit" novalidate validated=true class="was-validated">
       <b-form-group id="groceryNameInputGroup"
                     label="Grocery Name:"
                     label-for="groceryName">
@@ -95,18 +95,15 @@
 </template>
 
 <script>
-const items = [
-  { name: 'bread', amount: 2, location: 'Fridge 1'},
-  { name: 'butter', amount: 1, location: 'Fridge 1'},
-  { name: 'cheese', amount: 3, location: 'Fridge 2'},
-  { name: 'jam', amount: 2, location: 'Fridge 2'},
-  { name: 'a', amount: 3, location: 'Fridge 1'},
-  { name: 'b', amount: 1, location: 'Fridge 1'},
-  { name: 'c', amount: 2, location: 'Fridge 2'},
-]
 
 export default {
   data () {
+    let items = localStorage.getItem('groceries');
+    if (items) {
+      items = JSON.parse(items);
+    } else {
+      items = [];
+    }
     return {
       subtitle: 'Your Grocery Manager',
       items: items,
@@ -148,6 +145,7 @@ export default {
       } else {
         this.items.splice(index, 1);
       }
+      this.updateGroceries();
     },
     onFiltered (filteredItems) {
       // Trigger pagination to update the number of buttons/pages due to filtering
@@ -159,7 +157,7 @@ export default {
       if (!this.form.name || !this.form.fridge) return;
       let index = -1;
       this.items.forEach((item, i) => {
-        if (item.name === this.form.name) {
+        if (item.name === this.form.name && item.location === this.form.fridge) {
           index = i;
         }
       });
@@ -172,7 +170,11 @@ export default {
           location: this.form.fridge
         });
       }
+      this.updateGroceries();
     },
+    updateGroceries() {
+      localStorage.setItem('groceries', JSON.stringify(this.items));
+    }
   }
 }
 </script>
