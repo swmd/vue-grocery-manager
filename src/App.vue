@@ -75,7 +75,7 @@
       <div class="mb-5">Move groceries between Fridge 1 and Fridge 2</div>
       <b-row>
         <b-col md="5">
-          <b-form-select v-model="fridge1Selection" :options="fridge1Items" class="mb-3" :select-size="10">
+          <b-form-select v-model="fridge1Selection" :options="fridge1Items" class="mb-3" :select-size="10" multiple>
           </b-form-select>
           <div>Selected: <strong>{{ fridge1Selection }}</strong></div>
         </b-col>
@@ -84,7 +84,7 @@
           <b-button @click="moveFrom1To2"> >> </b-button>
         </b-col>
         <b-col md="5">
-          <b-form-select v-model="fridge2Selection" :options="fridge2Items" class="mb-3" :select-size="10">
+          <b-form-select v-model="fridge2Selection" :options="fridge2Items" class="mb-3" :select-size="10" multiple>
           </b-form-select>
           <div>Selected: <strong>{{ fridge2Selection }}</strong></div>
         </b-col>
@@ -171,8 +171,8 @@ export default {
       ],
       fridge1Items: [],
       fridge2Items: [],
-      fridge1Selection: null,
-      fridge2Selection: null
+      fridge1Selection: [],
+      fridge2Selection: []
     }
   },
   computed: {
@@ -238,50 +238,37 @@ export default {
       });
     },
     moveFrom2To1() {
-      if (!this.fridge2Selection) return;
-      let selectedIndex = -1;
-      this.fridge2Items.forEach((item, index) => {
-        if (item.value == this.fridge2Selection) {
-          selectedIndex = index;
+      // console.log('fridge2 selection: ', this.fridge2Selection)
+      if (this.fridge2Selection.length === 0) return;
+      this.fridge2Selection.forEach(selection => {
+        let selectedIndex = this.fridge2Items.findIndex(item => item.value === selection);
+        if (selectedIndex >= 0) {
+          let itemIndex = this.fridge1Items.findIndex(item => item.value === selection);
+          if (itemIndex < 0) {
+            this.fridge1Items.push(this.fridge2Items[selectedIndex]);
+          } else {
+            this.fridge1Items[itemIndex].amount += this.fridge2Items[selectedIndex].amount;
+          }        
+          this.fridge2Items.splice(selectedIndex, 1);
         }
       });
-      if (selectedIndex >= 0) {
-        let itemIndex = -1;
-        this.fridge1Items.forEach((item, index) => {
-          if (item.value == this.fridge2Selection) {
-            itemIndex = index;
-          }
-        });
-        if (itemIndex < 0) {
-          this.fridge1Items.push(this.fridge2Items[selectedIndex]);
-        } else {
-          this.fridge1Items[itemIndex].amount += this.fridge2Items[selectedIndex].amount;
-        }        
-        this.fridge2Items.splice(selectedIndex, 1);
-      }
+      this.fridge2Selection = [];      
     },
     moveFrom1To2() {
-      if (!this.fridge1Selection) return;
-      let selectedIndex = -1;
-      this.fridge1Items.forEach((item, index) => {
-        if (item.value == this.fridge1Selection) {
-          selectedIndex = index;
+      if (this.fridge1Selection.length === 0) return;
+      this.fridge1Selection.forEach(selection => {
+        let selectedIndex = this.fridge1Items.findIndex(item => item.value === selection);
+        if (selectedIndex >= 0) {
+          let itemIndex = this.fridge2Items.findIndex(item => item.value === selection);
+          if (itemIndex < 0) {
+            this.fridge2Items.push(this.fridge1Items[selectedIndex]);
+          } else {
+            this.fridge2Items[itemIndex].amount += this.fridge1Items[selectedIndex].amount;
+          }        
+          this.fridge1Items.splice(selectedIndex, 1);
         }
       });
-      if (selectedIndex >= 0) {
-        let itemIndex = -1;
-        this.fridge2Items.forEach((item, index) => {
-          if (item.value == this.fridge1Selection) {
-            itemIndex = index;
-          }
-        });
-        if (itemIndex < 0) {
-          this.fridge2Items.push(this.fridge1Items[selectedIndex]);
-        } else {
-          this.fridge2Items[itemIndex].amount += this.fridge1Items[selectedIndex].amount;
-        }        
-        this.fridge1Items.splice(selectedIndex, 1);
-      }
+      this.fridge1Selection = [];
     },
     applyChanges() {
       this.items = [];
