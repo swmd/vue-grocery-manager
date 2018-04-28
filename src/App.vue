@@ -65,6 +65,46 @@
       </template>
     </b-table>
 
+    <b-row>
+      <b-button @click="showModal">
+        Edit
+      </b-button>
+    </b-row>
+
+    <b-modal v-model="modalShow">
+      <div class="mb-5">Move groceries between Fridge 1 and Fridge 2</div>
+      <b-row>
+        <b-col md="5">
+          <b-form-select v-model="fridge1Selection" :options="fridge1Items" class="mb-3" :select-size="10">
+          </b-form-select>
+          <div>Selected: <strong>{{ fridge1Selection }}</strong></div>
+        </b-col>
+        <b-col md="2" class="button-container">
+          <b-button @click="moveFrom2To1" class="mb-5"> << </b-button>
+          <b-button @click="moveFrom1To2"> >> </b-button>
+        </b-col>
+        <b-col md="5">
+          <b-form-select v-model="fridge2Selection" :options="fridge2Items" class="mb-3" :select-size="10">
+          </b-form-select>
+          <div>Selected: <strong>{{ fridge2Selection }}</strong></div>
+        </b-col>
+      </b-row>
+      <div slot="modal-footer" class="w-100">
+        <b-row>
+          <b-col class="md-6 centered">
+            <b-btn variant="primary" @click="applyChanges">
+              Apply
+            </b-btn>
+          </b-col>
+          <b-col class="md-6 centered">
+            <b-btn variant="primary" @click="cancel">
+              Cancel
+            </b-btn>
+          </b-col>
+        </b-row>        
+      </div>
+    </b-modal>
+
     <b-row class="mb-4 mt-4">
       <h3>Add Grocery</h3>
     </b-row>
@@ -105,6 +145,7 @@ export default {
       items = [];
     }
     return {
+      modalShow: false,
       subtitle: 'Your Grocery Manager',
       items: items,
       fields: [
@@ -127,7 +168,11 @@ export default {
       fridges: [
         {text: 'Fridge 1', value: 'Fridge 1'},
         {text: 'Fridge 2', value: 'Fridge 2'}
-      ]
+      ],
+      fridge1Items: [],
+      fridge2Items: [],
+      fridge1Selection: null,
+      fridge2Selection: null
     }
   },
   computed: {
@@ -174,6 +219,91 @@ export default {
     },
     updateGroceries() {
       localStorage.setItem('groceries', JSON.stringify(this.items));
+    },
+    showModal() {
+      this.modalShow = !this.modalShow;
+      this.fridge1Items = this.items.filter(item => item.location === 'Fridge 1').map(item => {
+        return {
+          value: item.name,
+          text: item.name,
+          amount: item.amount
+        }
+      });
+      this.fridge2Items = this.items.filter(item => item.location === 'Fridge 2').map(item => {
+        return {
+          value: item.name,
+          text: item.name,
+          amount: item.amount
+        }
+      });
+    },
+    moveFrom2To1() {
+      if (!this.fridge2Selection) return;
+      let selectedIndex = -1;
+      this.fridge2Items.forEach((item, index) => {
+        if (item.value == this.fridge2Selection) {
+          selectedIndex = index;
+        }
+      });
+      if (selectedIndex >= 0) {
+        let itemIndex = -1;
+        this.fridge1Items.forEach((item, index) => {
+          if (item.value == this.fridge2Selection) {
+            itemIndex = index;
+          }
+        });
+        if (itemIndex < 0) {
+          this.fridge1Items.push(this.fridge2Items[selectedIndex]);
+        } else {
+          this.fridge1Items[itemIndex].amount += this.fridge2Items[selectedIndex].amount;
+        }        
+        this.fridge2Items.splice(selectedIndex, 1);
+      }
+    },
+    moveFrom1To2() {
+      if (!this.fridge1Selection) return;
+      let selectedIndex = -1;
+      this.fridge1Items.forEach((item, index) => {
+        if (item.value == this.fridge1Selection) {
+          selectedIndex = index;
+        }
+      });
+      if (selectedIndex >= 0) {
+        let itemIndex = -1;
+        this.fridge2Items.forEach((item, index) => {
+          if (item.value == this.fridge1Selection) {
+            itemIndex = index;
+          }
+        });
+        if (itemIndex < 0) {
+          this.fridge2Items.push(this.fridge1Items[selectedIndex]);
+        } else {
+          this.fridge2Items[itemIndex].amount += this.fridge1Items[selectedIndex].amount;
+        }        
+        this.fridge1Items.splice(selectedIndex, 1);
+      }
+    },
+    applyChanges() {
+      this.items = [];
+      this.fridge1Items.forEach(item => {
+        this.items.push({
+          name: item.value,
+          amount: item.amount,
+          location: 'Fridge 1'
+        });
+      });
+      this.fridge2Items.forEach(item => {
+        this.items.push({
+          name: item.value,
+          amount: item.amount,
+          location: 'Fridge 2'
+        });
+      });
+      this.updateGroceries();
+      this.modalShow = false;
+    },
+    cancel() {
+      this.modalShow = false;
     }
   }
 }
@@ -205,5 +335,18 @@ li {
 
 a {
   color: #42b983;
+}
+
+.button-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.centered {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style>
